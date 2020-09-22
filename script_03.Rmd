@@ -40,7 +40,12 @@ sep_old <-
          title = course_title,
          name = course_name,
          department = course_department) %>% 
-  filter(u_grad > 10)
+  filter(u_grad > 10) %>%
+  group_by(title) %>%
+  summarize(total_enrollment = sum(u_grad), .groups="drop")
+
+sep_old
+
 
 # But this is not correct! Look for Gov 50: Data. What do you see? What can you
 # do to clean it up?
@@ -51,6 +56,22 @@ sep_old <-
 
 **Prompt:** Read in and clean the new data, creating an object called `sep_new`. 
 
+```{r sc1}
+sep_new <- 
+  read_excel("new_data/class_enrollment_summary_by_term_9-22-2020.xlsx", 
+             skip = 3) %>% 
+  clean_names() %>% 
+  filter(! is.na(course_title)) %>% 
+  select(-grad, -non_degree, -x_reg, -vus, -employee, 
+         -withdraw, -total, -instructor_full_name, -course_section_code) %>%
+  rename(id = course_id,
+         title = course_title,
+         name = course_name,
+         department = course_department) %>% 
+  filter(u_grad > 10) %>%
+  group_by(title) %>%
+  summarize(total_enrollment = sum(u_grad), .groups="drop")
+```
 
 
 ### Scene 2
@@ -58,12 +79,20 @@ sep_old <-
 **Prompt:** Dean Amanda Claybaugh is concerned about the drop in undergraduate enrollment in some courses between September 1 and today. She wants you to analyze this issue. Before you dive into the details, provide some bullet points as to how Wisdom and Temperance apply to this situation. Every student should have several bullet points. Someone may be asked to share their screen and discuss. Refer to the Chapter 3 discussions about these Cardinal Virtues. Open it up in your browser.
 
 
+
 Before we start on the model, Wisdom suggests we should:
 
+-Wisdom suggests we should define precisely what we want to know in this data set
+-We would like an understanding of how online learning is affecting undergraduate enrollment
+-We must be thoughtful in grouping our data so that we can view useful trends
 
 
 
 After we have a model, Temperance suggests we should:
+
+
+-We must recognize that we cannot be certain of what the exact cause of each trend is
+-Our model may not explain everything factoring into a student's decision to enroll or not enroll
 
 
 
@@ -72,6 +101,12 @@ After we have a model, Temperance suggests we should:
 **Prompt:** Which classes had the biggest increases and decreases in undergraduate enrollments between September 1 and today? Make a graphic that shows the 5 biggest increases and decreases. Make it look nice.
 
 
+```{r}
+sep_combine <-
+  full_join(sep_old, sep_new, c("title")) %>%
+  mutate(change_in_enrollment = total_enrollment.y - total_enrollment.x) %>%
+  arrange((change_in_enrollment))
+```
 
 
 
